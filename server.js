@@ -18,7 +18,7 @@ const PARTIALS_DIR = path.join(VIEWS_DIR, "partials");
 const WS_URL = "wss://api.metro.net/ws/LACMTA_Rail/vehicle_positions";
 
 const VEHICLES = new Map(); // vehicle_id -> { updated_at, msg }
-const STALE_AFTER_SECONDS = 120;
+const STALE_AFTER_SECONDS = 240;
 
 let LAST_ERROR = null;
 function getVehicleId(msg) {
@@ -76,7 +76,9 @@ app.use("/public", express.static(path.join(__dirname, "public")));
 app.get("/", async (req, res) => {
     res.render("index");
 });
-
+app.get("/index.html", (req, res) => {
+    res.render("index")
+})
 app.get("/about", (req, res) => {
     res.render("about");
 });

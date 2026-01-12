@@ -1,8 +1,114 @@
-@import "https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css";
-#map {
-    height: 500px;
-    border: 1px solid black;
+:root {
+    --bg: #0b0f14;
+    --panel: #0f1720;
+    --card: #121c27;
+    --text: #e8eef6;
+    --muted: #9fb0c2;
+    --border: rgba(255, 255, 255, 0.08);
+    --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
 }
-html {
-    font-family: sans-serif;
+
+html,
+body {
+    height: 100%;
+}
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font:
+        14px/1.35 system-ui,
+        -apple-system,
+        Segoe UI,
+        Roboto,
+        Helvetica,
+        Arial;
+}
+.app {
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr auto;
+}
+.map {
+    position: relative;
+    min-width: 0;
+}
+.side {
+    background-color: var(--panel);
+    border-left: 1px solid var(--border);
+    display: grid;
+    grid-template-rows: auto 1fr;
+    min-width: 0;
+}
+.side-header {
+    padding: 14px 14px 10px 14px;
+    border-bottom: 1px solid var(--border);
+}
+.side-title {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+.dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    background: #aaa;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
+    flex: 0 0 auto;
+}
+.title {
+    font-weight: 650;
+    font-size: 15px;
+}
+.subtitle {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.grid {
+    padding: 14px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    overflow: auto;
+}
+.cell {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 10px 10px 9px 10px;
+    box-shadow: var(--shadow);
+    min-width: 0;
+}
+.k {
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.v {
+    margin-top: 6px;
+    font-weight: 650;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-weight: 600;
+}
+@media (max-width: 900px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: 60vh 40vh;
+  }
+  .side {
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
 }

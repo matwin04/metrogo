@@ -1,108 +1,172 @@
 const larouteColors = {
-    "801": "#0072BC",
-    "802": "#EB131B",
-    "803": "#58A738",
-    "804": "#FDB913",
-    "805": "#A05DA5",
-    "807": "#E56DB1",
-    "Antelope Valley Line": "#1d9d02",
-    "San Bernardino Line": "#a32236",
-    "Ventura County Line": "#f6a706",
-    "Orange County Line": "#ff7602",
-    "unknown": "#AAAAAA",
+    801: "#0072BC",
+    802: "#EB131B",
+    803: "#58A738",
+    804: "#FDB913",
+    805: "#A05DA5",
+    807: "#E56DB1",
+    unknown: "#AAAAAA"
 };
+
 const map = new maplibregl.Map({
     container: "map",
     style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
     center: [-118.25, 34.05],
     zoom: 9
 });
-function showTrainPopup(e) {
-    const f = e.features[0];
-    const p = f.properties;
 
-    // p values from GeoJSON are strings in MapLibre; keep that in mind
-    const route = p.route_code || p.routeId || "unknown";
-    const vehicleId = p.id || p.label || "unknown";
-    const tripId = p.tripId || "unknown";
-    const stopId = p.stopId || "unknown";
-    const speed = p.speed ?? "n/a";
-    const status = p.currentStatus || "n/a";
+map.addControl(new maplibregl.NavigationControl());
 
-    new maplibregl.Popup()
-        .setLngLat(f.geometry.coordinates)
-        .setHTML(`
-          <div style="min-width:220px">
-            <div><b>Vehicle:</b> ${vehicleId}</div>
-            <div><b>Route:</b> ${route}</div>
-            <div><b>Status:</b> ${status}</div>
-            <div><b>Stop:</b> ${stopId}</div>
-            <div><b>Seq:</b> ${p.currentStopSequence ?? "n/a"}</div>
-            <div><b>Speed:</b> ${speed}</div>
-            <div><b>Trip:</b> ${tripId}</div>
-          </div>
-    `)
-        .addTo(map);
+let selectedTrainId = null;
+let selectedUpdatedAt = null;
+
+function routeKey(p) {
+    return (p.route_code || p.routeId || "unknown").toString();
 }
-async function refreshTrains(format, data) {
+function routeColor(p) {
+    return larouteColors[routeKey(p)] || larouteColors.unknown;
+}
+function fmtCoord(n) {
+    const x = Number(n);
+    return Number.isFinite(x) ? x.toFixed(6) : "—";
+}
+function fmtSpeed(v) {
+    const x = Number(v);
+    if (!Number.isFinite(x)) return "—";
+    const mph = x * 2.236936; // if x is m/s
+    return `${x.toFixed(2)} m/s (${mph.toFixed(1)} mph)`;
+}
+function fmtUpdated(ms) {
+    const x = Number(ms);
+    return Number.isFinite(x) ? new Date(x).toLocaleString() : "—";
+}
+function fmtAge(ms) {
+    const x = Number(ms);
+    if (!Number.isFinite(x)) return "—";
+    const s = Math.max(0, Math.round((Date.now() - x) / 1000));
+    return `${s}s ago`;
+}
+
+function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value ?? "—";
+}
+
+function updateSidePanel(feature) {
+    const p = feature.properties || {};
+    const [lon, lat] = feature.geometry?.coordinates || [];
+
+    selectedTrainId = (p.id || "").toString();
+    selectedUpdatedAt = Number(p.updated_at);
+
+    const rk = routeKey(p);
+    const rc = routeColor(p);
+
+    // header
+    const dot = document.getElementById("routeDot");
+    if (dot) dot.style.background = rc;
+
+    setText("sideTitle", `Train ${p.id || p.label || "—"}`);
+    setText("sideSub", `Route ${rk} • ${p.currentStatus || "—"}`);
+
+    // cells
+    setText("routeId", p.routeId || p.route_code || "—");
+    setText("trainId", p.id || p.label || "—");
+    setText("tripId", p.tripId || "—");
+    setText("stopId", p.stopId || "—");
+    setText("status", p.currentStatus || "—");
+    setText("speed", fmtSpeed(p.speed));
+    setText("lat", fmtCoord(lat));
+    setText("lon", fmtCoord(lon));
+    setText("updatedAt", fmtUpdated(p.updated_at));
+    setText("age", fmtAge(p.updated_at));
+
+    highlightSelected();
+}
+
+function highlightSelected() {
+    if (!map.getLayer("train-selected")) return;
+    if (!selectedTrainId) {
+        map.setFilter("train-selected", ["==", ["get", "id"], "___none___"]);
+    } else {
+        map.setFilter("train-selected", ["==", ["get", "id"], selectedTrainId]);
+    }
+}
+
+async function refreshTrains() {
     try {
         const r = await fetch("/api/vehicles.geojson", { cache: "no-store" });
         if (!r.ok) return;
-
         const geojson = await r.json();
         const src = map.getSource("trains");
-        if (src) src.setData(geojson, data);
-    } catch (err) {
-        console.error("refreshTrains error:", err);
+        if (src) src.setData(geojson);
+        highlightSelected();
+    } catch (e) {
+        console.error("refreshTrains:", e);
     }
 }
-map.addControl(new maplibregl.NavigationControl());
-function getRouteColor(p) {
-    const key = (p.route_code || p.routeId || "unknown").toString();
-    return larouteColors[key] || larouteColors.unknown;
-}
 
+// Update “Age” live (without refetch)
+setInterval(() => {
+    if (!selectedUpdatedAt) return;
+    setText("age", fmtAge(selectedUpdatedAt));
+}, 1000);
 
 map.on("load", () => {
-    //Add Trains
-
     map.addSource("trains", {
         type: "geojson",
-        data: { type: "FeatureCollection", features: [] }, // start empty
+        data: { type: "FeatureCollection", features: [] }
     });
+
     map.addLayer({
-        id: 'trains-layer',
+        id: "trains-layer",
         type: "circle",
-        source: 'trains',
+        source: "trains",
         paint: {
-            'circle-radius': 5,
+            "circle-radius": 5,
             "circle-color": [
                 "match",
                 ["coalesce", ["get", "route_code"], ["get", "routeId"]],
-                "801", larouteColors["801"],
-                "802", larouteColors["802"],
-                "803", larouteColors["803"],
-                "804", larouteColors["804"],
-                "805", larouteColors["805"],
-                "807", larouteColors["807"],
+                "801",
+                larouteColors["801"],
+                "802",
+                larouteColors["802"],
+                "803",
+                larouteColors["803"],
+                "804",
+                larouteColors["804"],
+                "805",
+                larouteColors["805"],
+                "807",
+                larouteColors["807"],
                 larouteColors.unknown
             ],
             "circle-stroke-width": 1,
-            "circle-stroke-color": "#ffffff",
+            "circle-stroke-color": "#ffffff"
         }
-
     });
+
+    map.addLayer({
+        id: "train-selected",
+        type: "circle",
+        source: "trains",
+        paint: {
+            "circle-radius": 9,
+            "circle-color": "rgba(0,0,0,0)",
+            "circle-stroke-width": 3,
+            "circle-stroke-color": "#000"
+        },
+        filter: ["==", ["get", "id"], "___none___"]
+    });
+
     refreshTrains();
-    setInterval(refreshTrains, 5000);
-    map.on("click", "stations-layer", (e) => {
-        const f = e.features[0];
-        const p = f.properties;
-        new maplibregl.Popup()
-            .setLngLat(f.geometry.coordinates)
-            .setHTML(`<strong>${p.name}</strong> (${p.code})<br>${p.city}, ${p.state}`)
-            .addTo(map);
-    });
-    map.on("click", "trains-layer", showTrainPopup);
-    map.on("click", "lametro_rail-layer", showTrainPopup);
+    setInterval(refreshTrains, 5000); // ✅ every 5 seconds
 
+    map.on("click", "trains-layer", (e) => {
+        const f = e.features?.[0];
+        if (f) updateSidePanel(f);
+    });
+
+    map.on("mouseenter", "trains-layer", () => (map.getCanvas().style.cursor = "pointer"));
+    map.on("mouseleave", "trains-layer", () => (map.getCanvas().style.cursor = ""));
 });
