@@ -103,12 +103,12 @@ body {
     font-weight: 600;
 }
 @media (max-width: 900px) {
-  .app {
-    grid-template-columns: 1fr;
-    grid-template-rows: 60vh 40vh;
-  }
-  .side {
-    border-left: none;
-    border-top: 1px solid var(--border);
-  }
+    .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: 60vh 40vh;
+    }
+    .side {
+        border-left: none;
+        border-top: 1px solid var(--border);
+    }
 }
