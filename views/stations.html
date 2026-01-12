@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <title>Stations</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
+
+</head>
+<body>
+{{> navbar}}
+<table>
+    <thead>
+        <tr>
+            <th>Station</th>
+            <th>Code</th>
+            <th>Time Zone</th>
+            <th>Address</th>
+        </tr>
+    </thead>
+    <tbody>
+    {{#each stations}}
+    <tr>
+        <td>
+            <a href="/stations/{{code}}/">{{name}}</a>
+        </td>
+        <td>{{code}}</td>
+        <td>{{tz}}</td>
+        <td>{{city}}</td>
+        <td>{{state}}</td>
+    </tr>
+    {{/each}}
+    </tbody>
+</table>
+</body>

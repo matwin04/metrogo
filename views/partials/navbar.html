@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+<nav class="navbar is-dark" role="navigation" aria-label="main navigation">
+    <div class="navbar-brand">
+        <a class="navbar-item" href="/">
+            <i class="fas fa-train-subway"></i>&nbsp;
+            <strong>OTN</strong>
+        </a>
+
+        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarMain">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+    </div>
+
+    <div id="navbarMain" class="navbar-menu">
+        <div class="navbar-start">
+            <a class="navbar-item" href="/map">
+                <span class="icon"><i class="fas fa-map"></i></span>
+                <span>Map</span>
+            </a>
+
+            <a class="navbar-item" href="/trains">
+                <span class="icon"><i class="fas fa-train"></i></span>
+                <span>Trains</span>
+            </a>
+
+            <a class="navbar-item" href="/stations">
+                <span class="icon"><i class="fas fa-location-dot"></i></span>
+                <span>Stations</span>
+            </a>
+        </div>
+
+        <div class="navbar-end">
+            <div class="navbar-item">
+                <a class="button is-primary" href="/about">
+                    <span class="icon"><i class="fas fa-circle-info"></i></span>
+                    <span>About</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const burgers = Array.from(document.querySelectorAll(".navbar-burger"));
+        burgers.forEach((el) => {
+            el.addEventListener("click", () => {
+                const target = document.getElementById(el.dataset.target);
+                el.classList.toggle("is-active");
+                target.classList.toggle("is-active");
+            });
+        });
+    });
+</script>

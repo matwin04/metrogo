@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{station.name}}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
+    <link href="/styles/main.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+{{> navbar}}
+
+<br>
+<h1 class="title">{{code}} — {{station.name}}</h1>
+<p><strong>Code:</strong> {{station.code}}</p>
+<p><strong>City:</strong> {{station.city}}</p>
+<p><strong>State:</strong> {{station.state}}</p>
+
+<table class="table is-striped is-hoverable">
+    <thead>
+    <tr>
+        <th>Train ID</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{#if trains.length}}
+    {{#each trains}}
+    <tr>
+        <td>{{trainNum}}</td>
+        <td>{{routeName}}</td>
+        <td>{{destName}}</td>
+        <td>{{timeFor stations ../code}}</td>
+        <td>{{statusMsg}}</td>
+    </tr>
+    {{/each}}
+    {{else}}
+    <tr><td colspan="6">No trains found.</td></tr>
+    {{/if}}
+    </tbody>
+</table>
+</body>
+</html>

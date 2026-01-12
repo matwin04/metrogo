@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Train Info</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css" />
+    </head>
+    <body>
+        {{> navbar}}
+        <div class="container">
+            <h2 class="title is-3">{{train.routeName}} — Train {{train.trainNum}}</h2>
+            <p><strong>Status:</strong> {{train.trainState}} | <strong>Speed:</strong> {{train.velocity}} mph</p>
+            <p><strong>From:</strong> {{train.origName}} → <strong>To:</strong> {{train.destName}}</p>
+            <p><strong>Last reported:</strong> {{train.eventName}} ({{train.eventCode}})</p>
+
+            <h3 class="title is-4">Train Schedule</h3>
+            <table class="table is-fullwidth is-hoverable">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Station Name</th>
+                        <th>Status</th>
+                        <th>Scheduled Departure</th>
+                        <th>Actual Departure</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each stations}}
+                    <tr>
+                        <td>
+                            <a href="/stations/{{code}}">{{code}}</a>
+                        </td>
+                        <td>{{name}}</td>
+                        <td><span class="tag is-primary">{{status}}</span></td>
+                        <td class="time-cell" data-time="{{schDep}}">{{schDep}}</td>
+                        <td class="time-cell" data-time="{{dep}}">{{dep}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        <script>
+            function formatTime(isoString) {
+                if (!isoString) return "";
+                const d = new Date(isoString);
+                if (isNaN(d)) return isoString;
+                return d.toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true
+                });
+            }
+
+            document.querySelectorAll(".time-cell").forEach((td) => {
+                const raw = td.dataset.time;
+                td.textContent = formatTime(raw);
+            });
+        </script>
+    </body>
+</html>
