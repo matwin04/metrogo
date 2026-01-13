@@ -3,7 +3,9 @@ import path from "path";
 import dotenv from "dotenv";
 import { engine } from "express-handlebars";
 import { fileURLToPath } from "url";
+import {getRoutes, getShapesAsGeoJSON, getStopsAsGeoJSON, getStoptimes, importGtfs} from 'gtfs';
 import fs from "node:fs/promises";
+import { readFile } from 'fs/promises';
 import {WebSocket} from "ws";
 dotenv.config();
 
@@ -23,7 +25,17 @@ const STALE_AFTER_SECONDS = 240;
 // Error tracking
 let LAST_VEHICLES_ERROR = null;
 let LAST_UPDATES_ERROR = null;
+const GTFSCFG = JSON.parse(
+    await readFile(new URL('./config.json', import.meta.url))
+);
 
+await importGtfs(GTFSCFG);
+const routes = getRoutes()
+const stoptimes = getStoptimes({
+    trip_id:'63352104',
+});
+console.log(stoptimes);
+console.log("Routes", routes)
 function getVehicleId(msg) {
     return (
         msg?.id ||
@@ -121,15 +133,27 @@ app.get("/index.html", (req, res) => {
 app.get("/about", (req, res) => {
     res.render("about");
 });
+app.get("/tripsalt/:trip_id", (req, res) => {
+    const trip_id = req.params.trip_id;
+    const stoptimes = getStoptimes({trip_id});
+    res.render("trip", {
+        trip_id: trip_id,
+        stoptimes: stoptimes,
+    })
+})
 app.get("/trips/:tripId", async (req, res) => {
     const tripId = req.params.tripId;
     try {
         const response = await fetch(`https://api.metro.net/LACMTA_Rail/stop_times/trip_id/${tripId}`)
         const data = await response.json();
+        const stoptimes = getStoptimes({
+            trip_id: tripId,
+        });
         console.log(data);
         res.render("trip", {
             tripId: tripId,
-            stops: data
+            stops: data,
+            gtfs: stoptimes
         })
     } catch (error) {
         console.error(error);
@@ -177,6 +201,14 @@ app.get("/api/health", (req, res) => {
         tripUpdates_error: LAST_UPDATES_ERROR,
     });
 });
+app.get("/api/gtfs/shapes", (req, res) => {
+    const shapesGeojson = getShapesAsGeoJSON();
+    res.json(shapesGeojson)
+});
+app.get("/api/gtfs/stops", (req, res) => {
+    const stopsGeojson = getStopsAsGeoJSON();
+    res.json(stopsGeojson);
+})
 function msgToFeature(entry) {
     const msg = entry.msg;
     const pos = msg?.vehicle?.position || {};

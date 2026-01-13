@@ -117,7 +117,36 @@ map.on("load", () => {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] }
     });
+    map.addSource("stops",{
+        type: "geojson",
+        data: "/api/gtfs/stops",
+    })
+    map.addSource("routes", {
+        type: "geojson",
+        data: "/api/gtfs/shapes",
+    })
 
+    map.addLayer({
+        id: "routes-layer",
+        type: "line",
+        source: "routes",
+        paint: {
+            "line-width":2,
+            "line-color": ["get","route_color"]
+        }
+
+    });
+    map.addLayer({
+        id: "stops-layer",
+        type: "circle",
+        source: "stops",
+        paint: {
+            "circle-radius": 4,
+            "circle-color": "#ffffff",
+            "circle-stroke-width": 1,
+            "circle-stroke-color": "#000000"
+        }
+    })
     map.addLayer({
         id: "trains-layer",
         type: "circle",
@@ -145,7 +174,6 @@ map.on("load", () => {
             "circle-stroke-color": "#ffffff"
         }
     });
-
     map.addLayer({
         id: "train-selected",
         type: "circle",
