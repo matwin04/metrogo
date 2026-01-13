@@ -15,12 +15,15 @@ const __dirname = path.dirname(__filename);
 
 const VIEWS_DIR = path.join(__dirname, "views");
 const PARTIALS_DIR = path.join(VIEWS_DIR, "partials");
-const WS_URL = "wss://api.metro.net/ws/LACMTA_Rail/vehicle_positions";
-
+const WS_VEHICLES_URL = "wss://api.metro.net/ws/LACMTA_Rail/vehicle_positions";
+const WS_UPDATES_URL = "wss://api.metro.net/ws/LACMTA_Rail/trip_updates";
 const VEHICLES = new Map(); // vehicle_id -> { updated_at, msg }
+const UPDATES = new Map();
 const STALE_AFTER_SECONDS = 240;
+// Error tracking
+let LAST_VEHICLES_ERROR = null;
+let LAST_UPDATES_ERROR = null;
 
-let LAST_ERROR = null;
 function getVehicleId(msg) {
     return (
         msg?.id ||
@@ -29,7 +32,14 @@ function getVehicleId(msg) {
         null
     );
 }
-
+function getTripId(msg) {
+    return (
+        msg?.tripUpdate?.trip?.tripId ||
+        msg?.vehicle?.trip?.tripId ||   // in case something else carries it
+        msg?.id?.toString()?.split("_")?.[0] || // fallback for ids like "63612545_1190-1195_45000"
+        null
+    );
+}
 function cleanupStale() {
     const now = Date.now();
     for (const [vid, v] of VEHICLES.entries()) {
@@ -38,8 +48,8 @@ function cleanupStale() {
         }
     }
 }
-function connect() {
-    const ws = new WebSocket(WS_URL);
+function connectVehicles() {
+    const ws = new WebSocket(WS_VEHICLES_URL);
 
     ws.on("open", () => console.log("WS connected"));
 
@@ -50,14 +60,14 @@ function connect() {
             if (!vid) return;
 
             VEHICLES.set(vid, { updated_at: Date.now(), msg });
-            LAST_ERROR = null;
+            LAST_VEHICLES_ERROR = null;
         } catch (e) {
-            LAST_ERROR = `JSON parse error: ${e.message}`;
+            LAST_VEHICLES_ERROR = `JSON parse error: ${e.message}`;
         }
     });
 
     ws.on("error", (err) => {
-        LAST_ERROR = String(err);
+        LAST_VEHICLES_ERROR = String(err);
     });
 
     ws.on("close", () => {
@@ -65,7 +75,36 @@ function connect() {
         setTimeout(connect, 2000);
     });
 }
-connect();
+
+function connectTrips() {
+    const ws = new WebSocket(WS_UPDATES_URL);
+
+    ws.on("open", () => console.log("WS tripUpdates connected"));
+
+    ws.on("message", (buf) => {
+        try {
+            const msg = JSON.parse(buf.toString("utf8"));
+            const tripId = getTripId(msg);
+            if (!tripId) return;
+
+            UPDATES.set(String(tripId), { updated_at: Date.now(), msg });
+            LAST_UPDATES_ERROR = null;
+        } catch (e) {
+            LAST_UPDATES_ERROR = `tripUpdates JSON parse error: ${e.message}`;
+        }
+    });
+
+    ws.on("error", (err) => {
+        LAST_UPDATES_ERROR = String(err);
+    });
+
+    ws.on("close", () => {
+        console.log("WS tripUpdates closed, reconnecting...");
+        setTimeout(connectTrips, 2000);
+    });
+}
+connectVehicles();
+connectTrips();
 app.engine("html", engine({ extname: ".html", defaultLayout: false, partialsDir: PARTIALS_DIR }));
 app.set("view engine", "html");
 app.set("views", VIEWS_DIR);
@@ -82,7 +121,20 @@ app.get("/index.html", (req, res) => {
 app.get("/about", (req, res) => {
     res.render("about");
 });
-
+app.get("/trips/:tripId", async (req, res) => {
+    const tripId = req.params.tripId;
+    try {
+        const response = await fetch(`https://api.metro.net/LACMTA_Rail/stop_times/trip_id/${tripId}`)
+        const data = await response.json();
+        console.log(data);
+        res.render("trip", {
+            tripId: tripId,
+            stops: data
+        })
+    } catch (error) {
+        console.error(error);
+    }
+})
 app.get("/api/vehicles", (req, res) => {
     cleanupStale();
     const vehicles = Array.from(VEHICLES.values()).map(v => v.msg);
@@ -93,16 +145,37 @@ app.get("/api/vehicles", (req, res) => {
         vehicles
     });
 });
-
 app.get("/api/vehicle/:vehicleId", (req, res) => {
     const v = VEHICLES.get(req.params.vehicleId);
     if (!v) return res.status(404).json({ ok: false, error: "Not found" });
     res.json({ ok: true, vehicle: v.msg });
 });
+app.get("/api/updates", (req, res) => {
+    cleanupStale(UPDATES);
+    const tripUpdates = Array.from(UPDATES.values()).map((t) => t.msg);
+    res.json({
+        ok: true,
+        count: tripUpdates.length,
+        stale_after_seconds: STALE_AFTER_SECONDS,
+        tripUpdates,
+    });
+});
+app.get("/api/updates/:tripId", (req, res) => {
+    const t = UPDATES.get(String(req.params.tripId));
+    if (!t) return res.status(404).json({ ok: false, error: "Not found" });
+    res.json({ ok: true, trip: t.msg });
+});
 
 app.get("/api/health", (req, res) => {
-    cleanupStale();
-    res.json({ ok: true, count: VEHICLES.size, error: LAST_ERROR });
+    cleanupStale(VEHICLES);
+    cleanupStale(UPDATES);
+    res.json({
+        ok: true,
+        vehicles_count: VEHICLES.size,
+        tripUpdates_count: UPDATES.size,
+        vehicles_error: LAST_VEHICLES_ERROR,
+        tripUpdates_error: LAST_UPDATES_ERROR,
+    });
 });
 function msgToFeature(entry) {
     const msg = entry.msg;
@@ -137,7 +210,7 @@ function msgToFeature(entry) {
 }
 
 app.get("/api/vehicles.geojson", (req, res) => {
-    cleanupStale();
+    cleanupStale(VEHICLES);
     const routeFilter = (req.query.route || "").toString().trim();
     const features = [];
     for (const entry of VEHICLES.values()) {
