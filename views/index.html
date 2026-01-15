@@ -9,6 +9,7 @@
         <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 
         <link rel="stylesheet" href="/public/styles/main.css" />
+        <link rel="stylesheet" href="../public/styles/main.css" />
     </head>
 
     <body>
@@ -23,6 +24,10 @@
                         <div>
                             <div class="title" id="sideTitle">Select a train</div>
                             <div class="subtitle" id="sideSub">Click a dot on the map</div>
+                        </div>
+                        <div>
+                            <a>View Route</a>
+                            <a>View Trip</a>
                         </div>
                     </div>
                 </div>
@@ -41,7 +46,8 @@
 
                     <div class="cell">
                         <div class="k">Trip</div>
-                        <div class="v mono" id="tripId">—</div>
+                        <a class="v mono" href="" id="tripId">—</a>
+
                     </div>
 
                     <div class="cell">

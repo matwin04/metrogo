@@ -30,12 +30,7 @@ const GTFSCFG = JSON.parse(
 );
 
 await importGtfs(GTFSCFG);
-const routes = getRoutes()
-const stoptimes = getStoptimes({
-    trip_id:'63352104',
-});
-console.log(stoptimes);
-console.log("Routes", routes)
+
 function getVehicleId(msg) {
     return (
         msg?.id ||
@@ -133,6 +128,11 @@ app.get("/index.html", (req, res) => {
 app.get("/about", (req, res) => {
     res.render("about");
 });
+app.get("/api/trips/:trip_id", (req, res) => {
+    const trip_id = req.params.trip_id;
+    const stoptimes = getStoptimes({trip_id});
+    res.json(stoptimes);
+})
 app.get("/tripsalt/:trip_id", (req, res) => {
     const trip_id = req.params.trip_id;
     const stoptimes = getStoptimes({trip_id});
@@ -158,7 +158,7 @@ app.get("/trips/:tripId", async (req, res) => {
     } catch (error) {
         console.error(error);
     }
-})
+});
 app.get("/api/vehicles", (req, res) => {
     cleanupStale();
     const vehicles = Array.from(VEHICLES.values()).map(v => v.msg);
@@ -208,6 +208,12 @@ app.get("/api/gtfs/shapes", (req, res) => {
 app.get("/api/gtfs/stops", (req, res) => {
     const stopsGeojson = getStopsAsGeoJSON();
     res.json(stopsGeojson);
+});
+app.get("/api/gtfs/stoptimes/:stopId", (req, res) => {
+    const stopId = req.params.stopId;
+    res.json(getStoptimes({
+        stop_id: stopId,
+    }));
 })
 function msgToFeature(entry) {
     const msg = entry.msg;
