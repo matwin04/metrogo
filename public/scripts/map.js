@@ -72,6 +72,8 @@ function updateSidePanel(feature) {
     // cells
     setText("routeId", p.routeId || p.route_code || "—");
     setText("trainId", p.id || p.label || "—");
+    document.getElementById("tripId").href = `/trips/${p.tripId}`;
+    document.getElementById("stopId").href = `/departures/${p.stopId}`;
     setText("tripId", p.tripId || "—");
     setText("stopId", p.stopId || "—");
     setText("status", p.currentStatus || "—");

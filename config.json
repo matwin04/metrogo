@@ -2,6 +2,10 @@
   "agencies": [
     {
       "url": "https://gitlab.com/LACMTA/gtfs_rail/raw/master/gtfs_rail.zip"
+    },
+    {
+      "url": "https://metrolinktrains.com/globalassets/about/gtfs/gtfs.zip"
     }
-  ]
+  ],
+  "ignoreDuplicates": true
 }

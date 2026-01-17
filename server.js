@@ -133,31 +133,21 @@ app.get("/api/trips/:trip_id", (req, res) => {
     const stoptimes = getStoptimes({trip_id});
     res.json(stoptimes);
 })
-app.get("/tripsalt/:trip_id", (req, res) => {
+app.get("/departures/:stop_id", (req, res) => {
+    const stop_id = req.params.stop_id;
+    const stoptimes = getStoptimes({stop_id});
+    res.render("departures", {
+        stop_id: stop_id,
+        stoptimes: stoptimes,
+    });
+});
+app.get("/trips/:trip_id", async (req, res) => {
     const trip_id = req.params.trip_id;
     const stoptimes = getStoptimes({trip_id});
     res.render("trip", {
         trip_id: trip_id,
         stoptimes: stoptimes,
-    })
-})
-app.get("/trips/:tripId", async (req, res) => {
-    const tripId = req.params.tripId;
-    try {
-        const response = await fetch(`https://api.metro.net/LACMTA_Rail/stop_times/trip_id/${tripId}`)
-        const data = await response.json();
-        const stoptimes = getStoptimes({
-            trip_id: tripId,
-        });
-        console.log(data);
-        res.render("trip", {
-            tripId: tripId,
-            stops: data,
-            gtfs: stoptimes
-        })
-    } catch (error) {
-        console.error(error);
-    }
+    });
 });
 app.get("/api/vehicles", (req, res) => {
     cleanupStale();
