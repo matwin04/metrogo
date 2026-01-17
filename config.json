@@ -5,6 +5,14 @@
     },
     {
       "url": "https://metrolinktrains.com/globalassets/about/gtfs/gtfs.zip"
+    },
+
+    {
+      "url": "https://www.octa.net/current/google_transit.zip",
+      "realtimeVehiclePositions": {
+        "url": "https://api.octa.net/GTFSRealTime/protoBuf/VehiclePositions.aspx"
+      }
+
     }
   ],
   "ignoreDuplicates": true

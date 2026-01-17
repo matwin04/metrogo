@@ -3,7 +3,10 @@ import path from "path";
 import dotenv from "dotenv";
 import { engine } from "express-handlebars";
 import { fileURLToPath } from "url";
-import {getRoutes, getShapesAsGeoJSON, getStopsAsGeoJSON, getStoptimes, importGtfs} from 'gtfs';
+import {
+    getRoutes, getShapesAsGeoJSON, getStopsAsGeoJSON, getStoptimes, getVehiclePositions, importGtfs,
+    updateGtfsRealtime
+} from 'gtfs';
 import fs from "node:fs/promises";
 import { readFile } from 'fs/promises';
 import {WebSocket} from "ws";
@@ -158,6 +161,11 @@ app.get("/api/vehicles", (req, res) => {
         stale_after_seconds: STALE_AFTER_SECONDS,
         vehicles
     });
+});
+app.get("/api/gtfs/vehicles", async (req, res) => {
+    await updateGtfsRealtime(GTFSCFG);
+    const vehiclePositions = getVehiclePositions();
+    res.json(vehiclePositions);
 });
 app.get("/api/vehicle/:vehicleId", (req, res) => {
     const v = VEHICLES.get(req.params.vehicleId);
